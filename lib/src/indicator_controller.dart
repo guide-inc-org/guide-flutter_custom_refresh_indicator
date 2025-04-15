@@ -1,11 +1,7 @@
 part of 'custom_refresh_indicator.dart';
 
 class IndicatorController extends Animation<double>
-    with
-        AnimationEagerListenerMixin,
-        AnimationLocalListenersMixin,
-        AnimationLocalStatusListenersMixin,
-        ClampingWithOverscrollPhysicsState {
+    with AnimationEagerListenerMixin, AnimationLocalListenersMixin, AnimationLocalStatusListenersMixin, ClampingWithOverscrollPhysicsState {
   double _value;
 
   /// Represents the **minimum** value that an indicator can have.
@@ -30,12 +26,19 @@ class IndicatorController extends Animation<double>
     ScrollDirection? scrollingDirection,
     IndicatorState? state,
     bool? refreshEnabled,
+    bool? scrollUpdateTimerEnabled,
   })  : _currentState = state ?? IndicatorState.idle,
         _scrollingDirection = scrollingDirection ?? ScrollDirection.idle,
         _direction = direction ?? AxisDirection.down,
         _value = value ?? 0.0,
         _isRefreshEnabled = refreshEnabled ?? true,
+        _isScrollUpdateTimerEnabled = scrollUpdateTimerEnabled ?? false,
         _shouldStopDrag = false;
+
+  /// Whether custom refresh indicator can automatically hide
+  /// after timeout (5 seconds)
+  bool get isScrollUpdateTimerEnabled => _isScrollUpdateTimerEnabled;
+  bool _isScrollUpdateTimerEnabled;
 
   @protected
   @visibleForTesting
@@ -45,6 +48,7 @@ class IndicatorController extends Animation<double>
   }
 
   ScrollDirection _scrollingDirection;
+
   @protected
   @visibleForTesting
   void setScrollingDirection(ScrollDirection userScrollDirection) {
@@ -134,14 +138,12 @@ class IndicatorController extends Animation<double>
   /// Whether list scrolls horizontally
   ///
   /// (direction equals `AxisDirection.left` or `AxisDirection.right`)
-  bool get isHorizontalDirection =>
-      direction == AxisDirection.left || direction == AxisDirection.right;
+  bool get isHorizontalDirection => direction == AxisDirection.left || direction == AxisDirection.right;
 
   /// Whether list scrolls vertically
   ///
   /// (direction equals `AxisDirection.up` or `AxisDirection.down`)
-  bool get isVerticalDirection =>
-      direction == AxisDirection.up || direction == AxisDirection.down;
+  bool get isVerticalDirection => direction == AxisDirection.up || direction == AxisDirection.down;
 
   IndicatorState _currentState;
 
@@ -217,8 +219,7 @@ class IndicatorController extends Animation<double>
   /// the indicator [state] is [IndicatorState.idle],
   /// and [AnimationStatus.forward] otherwise.
   @override
-  AnimationStatus get status =>
-      state.isIdle ? AnimationStatus.dismissed : AnimationStatus.forward;
+  AnimationStatus get status => state.isIdle ? AnimationStatus.dismissed : AnimationStatus.forward;
 
   /// Returns [ClampedAnimation] that constrains the animation value of its parent
   /// within the given [min] and [max] range.
@@ -250,4 +251,14 @@ class IndicatorController extends Animation<double>
 
   /// Returns a new animation with the controller value transformed to the range from `0.0` to `1.0` inclusive.
   Animation<double> normalize() => transform(0.0, 1.0);
+
+  void disableScrollUpdateTimer() {
+    _isScrollUpdateTimerEnabled = false;
+    notifyListeners();
+  }
+
+  void enableScrollUpdateTimer() {
+    _isScrollUpdateTimerEnabled = true;
+    notifyListeners();
+  }
 }
